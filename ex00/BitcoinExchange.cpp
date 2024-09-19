@@ -64,6 +64,7 @@ bool    BitcoinExchange::_checkValueValidity(double value, std::string &err)
     return true;
 }
 
+/*
 bool    BitcoinExchange::_checkDateValidity(std::string date)
 {
     int year;
@@ -88,6 +89,47 @@ bool    BitcoinExchange::_checkDateValidity(std::string date)
     if (dateStruct.tm_year != year - 1900 || dateStruct.tm_mon != month - 1 || dateStruct.tm_mday != day)
         return false;
     return true;
+}*/
+
+bool    BitcoinExchange::_checkDateValidity(std::string date)
+{
+    int year;
+    int month;
+    int day;
+    char    delimiter1;
+    char    delimiter2;
+    size_t  strangerPos;
+
+    strangerPos = date.find_first_not_of("0123456789-");
+    if (strangerPos != std::string::npos)
+        return (false);
+
+    std::istringstream  ss(date);
+    if (ss >> year >> delimiter1 >> month >> delimiter2 >> day)
+    {
+        if (delimiter1 != '-' || delimiter2 != '-')
+            return (false);
+    }
+    if (year <= 0)
+        return (false);
+    if (month < 1 || month > 12)
+        return (false);
+    if (month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12)
+    {
+        if (day < 1 || day > 31)
+            return (false);
+    }
+    else if (month == 2)
+    {
+        if (day < 1 || day > 28)
+            return (false);
+    }
+    else
+    {
+        if (day < 1 || day > 30)
+            return (false);
+    }
+    return (true);
 }
 
 double   BitcoinExchange::_exchange(std::string date, double value)
@@ -102,6 +144,20 @@ double   BitcoinExchange::_exchange(std::string date, double value)
             itR--;
     }
     res = itR->second * value;
+    return (res);
+}
+
+std::string BitcoinExchange::_trim(std::string &str)
+{
+    std::string res;
+    int i = str.length() - 1;
+    int j = 0;
+
+    while (str[j] == ' ')
+        j++;
+    while (str[i] == ' ')
+        i--;
+    res = str.substr(j, i + 1);
     return (res);
 }
 
@@ -125,18 +181,30 @@ void    BitcoinExchange::proceedExchange(std::string inputFN)
         if (line.compare("date | value") == 0)
             continue ;
         size_t  delimiterPos = line.find('|');
-        if (delimiterPos == std::string::npos || delimiterPos == line.length() - 1)
+
+        if (delimiterPos == std::string::npos)
         {
             std::cout << "Error: bad format line. Line format should be \'date | value\'" << std::endl;
             continue ;
         }
-        date = line.substr(0, delimiterPos - 1);
+        date = line.substr(0, delimiterPos);
+        date = _trim(date);
         if (!_checkDateValidity(date))
         {
             std::cout << "Error: bad input => " << date << std::endl;
             continue ;
         }
-        value = std::stod(line.substr(delimiterPos + 2));
+        valueStr = line.substr(delimiterPos + 1);
+        try
+        {
+            value = std::stod(valueStr);
+        }
+        catch (const std::invalid_argument &e)
+        {
+            (void)e;
+            std::cerr << "Error: value missing" << std::endl;
+            return ;
+        }
         if (!_checkValueValidity(value, err))
         {
             std::cout << "Error: " << err << std::endl;

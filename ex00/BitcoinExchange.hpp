@@ -9,6 +9,7 @@
 #include <climits>
 #include <ctime>
 #include <limits>
+#include <stdexcept>
 
 class BitcoinExchange
 {
@@ -18,6 +19,7 @@ class BitcoinExchange
         static bool    _checkDateValidity(std::string date);
         static bool    _checkValueValidity(double value, std::string &err);
         double    _exchange(std::string date, double value);
+        static std::string  _trim(std::string &str);
     
     public:
         BitcoinExchange();
